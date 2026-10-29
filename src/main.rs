@@ -122,7 +122,8 @@ fn set_storage_dir() {
                 .call_method(file, "getAbsolutePath", "()Ljava/lang/String;", &[])?
                 .l()?;
             let path = JString::from(path);
-            Ok(env.get_string(&path)?.to_string_lossy().into_owned())
+            let path = env.get_string(&path)?.to_string_lossy().into_owned();
+            Ok(path)
         })();
         let _ = sender.send(files_dir.map_err(|error| error.to_string()));
     });
