@@ -4703,12 +4703,7 @@ mod tests {
 
     #[test]
     fn server_paths_are_validated_for_unix_and_windows_servers() {
-        for path in [
-            "/srv/work",
-            "F:/LLM",
-            r"F:\LLM",
-            r"\\server\share\goose",
-        ] {
+        for path in ["/srv/work", "F:/LLM", r"F:\LLM", r"\\server\share\goose"] {
             assert!(
                 is_absolute_server_path(path),
                 "absolute server path `{path}` was rejected"
