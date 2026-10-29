@@ -2035,7 +2035,7 @@ fn create_session(
     });
 
     let working_dir = ctx.settings.peek().working_dir.trim().to_string();
-    if working_dir.is_empty() || !working_dir.starts_with('/') {
+    if !is_absolute_server_path(&working_dir) {
         show_toast(
             ctx,
             "Set an absolute working directory (a path on the server) in Settings first",
@@ -2115,6 +2115,20 @@ fn create_session(
             }
         }
     });
+}
+
+fn is_absolute_server_path(path: &str) -> bool {
+    if path.starts_with('/') || path.starts_with("\\\\") {
+        return true;
+    }
+
+    // This path belongs to the remote server, so the mobile host's path rules
+    // cannot determine whether a Windows drive path is absolute.
+    let bytes = path.as_bytes();
+    bytes.len() >= 3
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && matches!(bytes[2], b'/' | b'\\')
 }
 
 /// Send the user's message, with whatever they attached to it, and run the
@@ -4685,6 +4699,28 @@ mod tests {
             app.toast().as_deref(),
             Some("Not connected — reconnect in Settings")
         );
+    }
+
+    #[test]
+    fn server_paths_are_validated_for_unix_and_windows_servers() {
+        for path in [
+            "/srv/work",
+            "F:/LLM",
+            r"F:\LLM",
+            r"\\server\share\goose",
+        ] {
+            assert!(
+                is_absolute_server_path(path),
+                "absolute server path `{path}` was rejected"
+            );
+        }
+
+        for path in ["", "work/goose", "./work", "~/work", "F:LLM"] {
+            assert!(
+                !is_absolute_server_path(path),
+                "relative server path `{path}` was accepted"
+            );
+        }
     }
 
     /// A send that could not be handed to the transport must report false and
