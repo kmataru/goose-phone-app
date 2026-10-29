@@ -1,5 +1,6 @@
 [application]
 name = "Goose Mobile"
+android_manifest = "android/AndroidManifest.xml"
 
 [web.app]
 title = "Goose Mobile"
