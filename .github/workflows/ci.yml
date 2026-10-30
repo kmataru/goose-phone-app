@@ -194,3 +194,44 @@ jobs:
       # iOS/desktop split depend on a line in a YAML file nobody reads.
       - name: Check the iOS build
         run: cargo check --package goose-mobile --target aarch64-apple-ios
+
+  android:
+    name: Build APK (Android)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Android Gradle Plugin requires Java 17, while the SDK and default NDK
+      # are already present on GitHub's Ubuntu 24.04 runner image.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # `dx` otherwise follows the x86_64 Linux host and produces an emulator
+      # build. Pin arm64 here because this artifact is for a physical phone.
+      - name: Add the Android target
+        run: rustup target add aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+
+      # Keep the CLI on the same release as the Dioxus crates. A newer `dx`
+      # may emit a Gradle project that the pinned 0.7.10 runtime does not match.
+      - name: Install Dioxus CLI
+        run: cargo install dioxus-cli@0.7.10 --locked
+
+      # The default (non-release) Android bundle uses Gradle's debug signing,
+      # so the artifact can be installed for testing without repository secrets.
+      - name: Build the APK
+        run: >-
+          dx bundle --android
+          --target aarch64-linux-android
+          --package-types apk
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: goose-mobile-android-apk
+          path: target/dx/**/*.apk
+          if-no-files-found: error
+          retention-days: 7

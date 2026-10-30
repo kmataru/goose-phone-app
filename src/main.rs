@@ -96,11 +96,51 @@ mod views;
 mod voice;
 
 fn main() {
-    // Persisted settings live in the app-private data dir (Android:
-    // getFilesDir() via JNI, iOS/desktop: the platform data dir).
-    dioxus_sdk_storage::set_dir!();
+    set_storage_dir();
     goose_acp_client::ensure_crypto_provider();
     launch();
+}
+
+#[cfg(target_os = "android")]
+fn set_storage_dir() {
+    use dioxus::mobile::wry::prelude::{dispatch, jni, JString};
+    use std::path::PathBuf;
+    use std::sync::mpsc::sync_channel;
+    use std::time::Duration;
+
+    // `directories::BaseDirs`, which backs `set_dir!()`, has no home directory
+    // on Android and panics before Dioxus can mount the first view. Wry already
+    // owns the Activity context by the time it calls this binary's `main`, so
+    // ask that context for the app-private files directory on its UI thread.
+    let (sender, receiver) = sync_channel(1);
+    dispatch(move |env, activity, _webview| {
+        let files_dir = (|| -> jni::errors::Result<String> {
+            let file = env
+                .call_method(activity, "getFilesDir", "()Ljava/io/File;", &[])?
+                .l()?;
+            let path = env
+                .call_method(file, "getAbsolutePath", "()Ljava/lang/String;", &[])?
+                .l()?;
+            let path = JString::from(path);
+            let path = env.get_string(&path)?.to_string_lossy().into_owned();
+            Ok(path)
+        })();
+        let _ = sender.send(files_dir.map_err(|error| error.to_string()));
+    });
+
+    let path = match receiver.recv_timeout(Duration::from_secs(5)) {
+        Ok(Ok(path)) => PathBuf::from(path),
+        // `/data/data/<package>` is Android's compatibility alias for the
+        // current user's private app directory. It keeps startup usable if a
+        // vendor WebView fails the JNI query above.
+        Ok(Err(_)) | Err(_) => PathBuf::from("/data/data/com.goosemobile.app/files"),
+    };
+    dioxus_sdk_storage::set_directory(path.join("goose-mobile"));
+}
+
+#[cfg(not(target_os = "android"))]
+fn set_storage_dir() {
+    dioxus_sdk_storage::set_dir!();
 }
 
 /// Open the window the desktop shell was designed for, and refuse to let it be
