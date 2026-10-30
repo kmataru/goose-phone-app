@@ -341,7 +341,11 @@ fn ChatCompose(
                 rows: 1,
                 oninput: move |e| draft.set(e.value()),
                 onkeydown: move |e| {
-                    if e.key() == Key::Enter && !e.modifiers().contains(Modifiers::SHIFT) {
+                    if super::composer_key_submits(
+                        crate::shell::Shell::CURRENT,
+                        e.key(),
+                        e.modifiers(),
+                    ) {
                         e.prevent_default();
                         if can_send {
                             submit();
@@ -4113,12 +4117,11 @@ pub(crate) mod pressing {
         );
     }
 
-    /// Enter sends and Shift+Enter does not, which is the difference between
-    /// a paragraph break and a message posted mid-sentence. Both arms are
-    /// checked in one test because the bug is always that one of them started
-    /// behaving like the other.
+    /// The desktop keeps plain Enter as its send shortcut and Shift+Enter as a
+    /// paragraph break. Mobile's manual-send policy is asserted at the shared
+    /// shell boundary where it can run in a host test.
     #[test]
-    fn enter_sends_and_shift_enter_writes_a_new_line() {
+    fn desktop_enter_sends_and_shift_enter_writes_a_new_line() {
         let _alone = alone();
         let seed: fn(&AppCtx) = |ctx| {
             open_chat(ctx);
