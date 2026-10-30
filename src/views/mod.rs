@@ -40,8 +40,8 @@ use crate::state::{AppCtx, ConnState};
 /// A phone's Return key belongs to multiline input; sending there is an
 /// explicit tap. The desktop keeps plain Enter as its keyboard shortcut, with
 /// Shift-Enter available for a line break.
-pub(crate) fn composer_key_submits(shell: Shell, key: Key, modifiers: Modifiers) -> bool {
-    shell == Shell::Desktop && key == Key::Enter && !modifiers.contains(Modifiers::SHIFT)
+pub(crate) fn composer_key_submits(shell: Shell, key: &Key, modifiers: Modifiers) -> bool {
+    shell == Shell::Desktop && key == &Key::Enter && !modifiers.contains(Modifiers::SHIFT)
 }
 
 /// Small colored dot + label reflecting the connection state.
@@ -358,22 +358,22 @@ mod tests {
     fn composer_enter_policy_follows_the_shell() {
         assert!(!super::composer_key_submits(
             Shell::Mobile,
-            Key::Enter,
+            &Key::Enter,
             Modifiers::empty()
         ));
         assert!(!super::composer_key_submits(
             Shell::Mobile,
-            Key::Enter,
+            &Key::Enter,
             Modifiers::SHIFT
         ));
         assert!(super::composer_key_submits(
             Shell::Desktop,
-            Key::Enter,
+            &Key::Enter,
             Modifiers::empty()
         ));
         assert!(!super::composer_key_submits(
             Shell::Desktop,
-            Key::Enter,
+            &Key::Enter,
             Modifiers::SHIFT
         ));
     }

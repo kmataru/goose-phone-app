@@ -343,7 +343,7 @@ fn ChatCompose(
                 onkeydown: move |e| {
                     if super::composer_key_submits(
                         crate::shell::Shell::CURRENT,
-                        e.key(),
+                        &e.key(),
                         e.modifiers(),
                     ) {
                         e.prevent_default();
