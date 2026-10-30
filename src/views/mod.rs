@@ -35,15 +35,6 @@ use crate::icons::Icon;
 use crate::shell::Shell;
 use crate::state::{AppCtx, ConnState};
 
-/// Whether a composer key press submits instead of editing its textarea.
-///
-/// A phone's Return key belongs to multiline input; sending there is an
-/// explicit tap. The desktop keeps plain Enter as its keyboard shortcut, with
-/// Shift-Enter available for a line break.
-pub(crate) fn composer_key_submits(shell: Shell, key: Key, modifiers: Modifiers) -> bool {
-    shell == Shell::Desktop && key == Key::Enter && !modifiers.contains(Modifiers::SHIFT)
-}
-
 /// Small colored dot + label reflecting the connection state.
 #[component]
 pub fn ConnBadge() -> Element {
@@ -349,34 +340,7 @@ mod tests {
     use dioxus::prelude::*;
 
     use super::press::{alone, Js, Pressable};
-    use crate::shell::Shell;
     use crate::state::AppCtx;
-
-    /// Return edits a phone draft regardless of Shift, while the desktop's
-    /// plain-Return shortcut remains available.
-    #[test]
-    fn composer_enter_policy_follows_the_shell() {
-        assert!(!super::composer_key_submits(
-            Shell::Mobile,
-            Key::Enter,
-            Modifiers::empty()
-        ));
-        assert!(!super::composer_key_submits(
-            Shell::Mobile,
-            Key::Enter,
-            Modifiers::SHIFT
-        ));
-        assert!(super::composer_key_submits(
-            Shell::Desktop,
-            Key::Enter,
-            Modifiers::empty()
-        ));
-        assert!(!super::composer_key_submits(
-            Shell::Desktop,
-            Key::Enter,
-            Modifiers::SHIFT
-        ));
-    }
 
     thread_local! {
         /// The document a probe installs, reachable from the test that mounted

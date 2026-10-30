@@ -1771,11 +1771,7 @@ fn CodeCompose(
                 disabled: waking,
                 oninput: move |e| draft.set(e.value()),
                 onkeydown: move |e| {
-                    if super::composer_key_submits(
-                        crate::shell::Shell::CURRENT,
-                        e.key(),
-                        e.modifiers(),
-                    ) {
+                    if e.key() == Key::Enter && !e.modifiers().contains(Modifiers::SHIFT) {
                         e.prevent_default();
                         if can_send {
                             submit();
@@ -7015,11 +7011,11 @@ mod pressing {
         );
     }
 
-    /// The desktop keeps Return as its send shortcut and Shift-Return as a line
-    /// break. Mobile's manual-send policy is asserted at the shared shell
-    /// boundary where it can run in a host test.
+    /// Return sends and Shift-Return writes a line, which is the difference
+    /// between a composer and a form field. Getting it backwards sends half a
+    /// paragraph to an agent.
     #[test]
-    fn desktop_return_sends_and_shift_return_does_not() {
+    fn return_sends_and_shift_return_does_not() {
         let _alone = alone();
         let mut sent = Pressable::mount(seed_chat, chat_probe);
         sent.type_into("class=\"input\"", "ship it");
